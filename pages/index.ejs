@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Todo List</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+  <div class="container">
+    <div class="row justify-content-center mt-5">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="text-center">Todo List</h3>
+          </div>
+          <div class="card-body">
+            <form id="todoForm">
+              <div class="input-group mb-3">
+                <input type="text" class="form-control" placeholder="Add a new todo" id="todoInput" name="task" data-test-id="addTaskInput">
+                <div class="input-group-append">
+                  <button class="btn btn-primary" type="submit" onclick="addToDo()" data-test-id="addTaskBtn">Add</button>
+                </div>
+              </div>
+            </form>
+            <ul class="list-group" id="todoList" data-test-id="tasks">
+              <% tasks.forEach(task => { %>
+                <li class="list-group-item" style="display: flex; justify-content: space-between;">
+                 <span> <%= task.task %></span>
+                 <span style="cursor:pointer" id="<%= task.id %>" onclick="deleteTask(this.id)" data-test-id="deleteTask-<%= task.id %>">❌</span>
+                </li>
+                <% }); %>
+            </ul>
+          </div>
+        </div>
+      </div>
+     
+    </div>
+    <div class="row justify-content-center">
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="logout()">Log Out</button>
+ </div>
+</div>
+  </div>
+ 
+  <script>
+    async function deleteTask(id) {
+      console.log(id)
+        var response = await fetch(`/tasks/${id}`, {
+            method: 'DELETE'
+        });
+        if(response.ok) {
+            document.getElementById(id).parentElement.remove();
+        } else {
+            alert("Failed to delete task");
+        }
+    }
+
+    async function logout() {
+        var response = await fetch('logout', {
+            method: 'GET'
+        });
+        if(response.ok) {
+            location.href = 'login';
+        } else {
+            alert("Failed to log out");
+        }
+    }
+    async function addToDo() {
+        var taskContent = document.getElementById("todoInput").value;
+        console.log(JSON.stringify({"task":taskContent}));
+        var response = await fetch('add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({"task":taskContent}),
+        });
+        if(response.ok) {
+            var todoList = document.getElementById("todoList");
+            var li = document.createElement("li");
+            li.className = "list-group-item";
+            li.appendChild(document.createTextNode(taskContent));
+            todoList.appendChild(li);
+        } else {
+            alert("Failed to add todo");
+        }
+    }
+    function renderTask(task) {
+    const taskItem = document.createElement('li');
+    
+    taskItem.className = 'list-group-item';
+    taskItem.style.display = 'flex';
+    taskItem.style.justifyContent = 'space-between';
+    const taskDetails = document.createElement('span');
+    taskDetails.textContent = `${task.task}`;
+
+    const deleteIcon = document.createElement('span');
+    deleteIcon.textContent = '❌'; 
+    deleteIcon.style.cursor = 'pointer';
+    deleteIcon.addEventListener('click', async () => {
+        const response = await fetch(`/tasks/${task.id}`, {
+            method: 'DELETE'
+        });
+        if (response.ok) {
+            taskItem.remove();
+        } else {
+            alert('Failed to delete task');
+        }
+    });
+
+    taskItem.appendChild(taskDetails);
+    taskItem.appendChild(deleteIcon);
+    document.getElementById('todoList').appendChild(taskItem);
+}
+    async function getTodos() {
+        var response = await fetch('/tasks');
+        var todos = await response.json();
+        var todoList = document.getElementById("todoList");
+        todos.forEach(todo => {
+            renderTask(todo);
+        });
+    }
+  </script>
+</body>
+</html>
